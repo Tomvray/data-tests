@@ -1,16 +1,17 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
+#include <stdio.h>
 
 PG_MODULE_MAGIC;
 
+typedef struct {
+    int32 length;
+    char data[FLEXIBLE_ARRAY_MEMBER];
+} text;
+
 PG_FUNCTION_INFO_V1(test_in);
 PG_FUNCTION_INFO_V1(test_out);
-
-typedef struct
-{
-    text *data;
-} test;
 
 Datum
 test_in(PG_FUNCTION_ARGS)
@@ -20,8 +21,9 @@ test_in(PG_FUNCTION_ARGS)
     {
         ereport(ERROR, errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED), errmsg("null input not allowed!!!!!"));
     } */
-    test *result = (test *)palloc(sizeof(test));
-    result->data = cstring_to_text(input_str);
+    text *destination = (text *) palloc(VARHDRSZ + strlen(input_str));
+	SET_VARSIZE(destination, VARHDRSZ + strlen(input_str));
+	memcpy(destination->data, input_str, strlen(input_str));
 
     PG_RETURN_POINTER(result);
 }
